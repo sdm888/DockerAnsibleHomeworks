@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      - POSTGRES_PASSWORD="secret"
+    ports:
+      - "5432:5432"
+    volumes:
+      - /home/vasa/data:/var/lib/postgresql/data
+    networks:
+      - my-pg-network
+
+networks:
+  my-pg-network:
+    driver: bridge
