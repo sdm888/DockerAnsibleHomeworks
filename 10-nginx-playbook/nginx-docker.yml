@@ -1,0 +1,117 @@
+---
+- name: Nginx
+  hosts: nginx_servers
+  tasks:
+    - name: Установка Docker
+      become: true
+      block:
+        - name: Установка дополнительных пакетов
+          ansible.builtin.apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+              - curl
+              - software-properties-common
+              - python3-pip
+            update_cache: true
+            cache_valid_time: 86400
+        
+        - name: Установка модуля requests для Python
+          ansible.builtin.pip:
+            name: requests
+
+        - name: Добавление ключа Docker
+          ansible.builtin.apt_key:
+            url: "https://download.docker.com/linux/ubuntu/gpg"
+            state: present
+
+        - name: Установка стабильного репозитория
+          ansible.builtin.apt_repository:
+            repo: "deb https://download.docker.com/linux/ubuntu focal stable"
+            state: present
+            update_cache: true
+            filename: docker
+
+        - name: Установка Docker CE
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+            update_cache: true
+
+        - name: Проверка, что Docker установлен и перезагружен
+          ansible.builtin.service:
+            name: docker
+            state: restarted
+            enabled: true
+
+    - name: Завершение установки Docker
+      become: true
+      block:
+        - name: Добавление в группу Docker пользователя "{{ ansible_user }}"
+          ansible.builtin.user:
+            name: "{{ ansible_user }}"
+            groups: docker
+            append: true
+
+        - name: Перезагрузка
+          ansible.builtin.reboot:
+    
+    - name: Запуск Nginx в Docker
+      vars:
+        nginx_image: "nginx:latest"
+        container_name: "nginx"
+        host_port: 8081
+        container_port: 80
+      block:
+        - name: Копирование файлов конфигурации Nginx
+          ansible.builtin.copy:
+            src: ./docker
+            dest: "{{ ansible_user_dir }}"
+
+        - name: Скачивание образа Nginx
+          community.docker.docker_image:
+            name: "{{ nginx_image }}"
+            source: pull
+
+        - name: Остановить запущенный контейнер Nginx, если есть
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ nginx_image }}"
+            state: stopped
+          ignore_errors: true
+
+        - name: Удалить существующий контейнер Nginx, если есть
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            state: absent
+          ignore_errors: true
+
+        - name: Запустить контейнер Nginx
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ nginx_image }}"
+            state: started
+            published_ports:
+              - "{{ host_port }}:{{ container_port }}"
+            volumes:
+              - "{{ ansible_user_dir }}/docker/nginx/conf.d:/etc/nginx/conf.d"
+              - "{{ ansible_user_dir }}/docker/nginx/html:/usr/share/nginx/html"
+            restart_policy: always
+
+        - name: Проверка, что контейнер Nginx запущен
+          community.docker.docker_container_info:
+            name: "{{ container_name }}"
+          register: nginx_container_info
+
+        - name: Вывод статуса контейнера Nginx
+          ansible.builtin.debug:
+            msg: "ID запущенного контейнера Nginx: {{ nginx_container_info.container.Id }}"
+  
+        - name: Проверка, что Nginx запущен на порту {{ host_port }}
+          ansible.builtin.uri:
+            url: "http://localhost:{{ host_port }}"
+          register: nginx_check
+
+        - name: Статус ответа Nginx
+          ansible.builtin.debug:
+            var: nginx_check.status
