@@ -1,0 +1,43 @@
+---
+- name: Установка Docker
+  become: true
+  block:
+    - name: Добавление universe
+      ansible.builtin.apt_repository:
+        repo: "deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
+        state: present
+
+    - name: Установка дополнительных пакетов
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        update_cache: true
+        cache_valid_time: 86400
+
+    - name: Добавление ключа Docker
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Установка стабильного репозитория
+      ansible.builtin.apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu focal stable"
+        state: present
+        update_cache: true
+        filename: docker
+
+    - name: Установка Docker CE и Docker Compose
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-compose-plugin
+        update_cache: true
+
+    - name: Проверка, что Docker установлен и перезагружен
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+        enabled: true
