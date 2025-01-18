@@ -1,0 +1,1 @@
+users_ssh_key_dir: "{{ lookup('env', 'HOME') + '/user_ssh_keys' }}"

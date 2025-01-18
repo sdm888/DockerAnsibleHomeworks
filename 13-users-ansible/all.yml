@@ -1,0 +1,10 @@
+---
+- name: Конфигурирование серверов и добавление пользователей
+  hosts: servers
+  roles:
+    - role: preconfig
+      tags: preconfig
+      become: true
+
+    - role: users
+      tags: users

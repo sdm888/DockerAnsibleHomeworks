@@ -1,0 +1,13 @@
+---
+- name: Создание каталога для ключей SSH на локальном хосте
+  ansible.builtin.file:
+    path: "{{ users_ssh_key_dir }}"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+
+- name: Добавление пользователей
+  ansible.builtin.include_tasks: ./create_user.yml
+  loop: "{{ usernames }}"
+  loop_control:
+    loop_var: username
