@@ -1,0 +1,30 @@
+services:
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - grafana_datasources:/etc/grafana/datasources
+      - grafana_dashboards:/etc/grafana/dashboards
+      - grafana_plugins:/var/lib/grafana/plugins
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+    ports:
+      - "3000:3000"
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - prometheus_config:/etc/prometheus
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+volumes:
+  grafana_data:
+  grafana_datasources:
+  grafana_dashboards:
+  grafana_plugins:
+  prometheus_config:
+  prometheus_data:
