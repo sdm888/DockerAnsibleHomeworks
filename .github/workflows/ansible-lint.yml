@@ -18,8 +18,5 @@ jobs:
       - name: Install ansible-lint
         run: pip install ansible-lint
 
-      - name: Set ANSIBLE_HOME
-        run: echo "ANSIBLE_HOME=/tmp/.ansible" >> $GITHUB_ENV
-
       - name: Run ansible-lint
-        run: ansible-lint
+        run: ansible-lint --offline
