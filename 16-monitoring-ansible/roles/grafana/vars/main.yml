@@ -1,0 +1,9 @@
+grafana_volume_list:
+  - name: grafana_data
+    target: /var/lib/grafana
+  - name: grafana_datasources
+    target: /etc/grafana/datasources
+  - name: grafana_dashboards
+    target: /etc/grafana/dashboards
+  - name: grafana_plugins
+    target: /var/lib/grafana/plugins

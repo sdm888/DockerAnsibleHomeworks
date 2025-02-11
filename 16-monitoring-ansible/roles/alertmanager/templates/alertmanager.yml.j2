@@ -1,0 +1,21 @@
+global:
+  resolve_timeout: "{{ alertmanager.global.resolve_timeout }}"
+
+route:
+  receiver: 'default'
+  group_wait: "{{ alertmanager.route.group_wait }}"
+  group_interval: "{{ alertmanager.route.group_interval }}"
+  repeat_interval: "{{ alertmanager.route.repeat_interval }}"
+
+receivers:
+{% for receiver in alertmanager.receivers %}
+  - name: "{{ receiver.name }}"
+    email_configs:
+  {% for email_config in receiver.email_configs %}
+    - to: "{{ email_config.to }}"
+        from: "{{ email_config.from }}"
+        smarthost: "{{ email_config.smarthost }}"
+        auth_username: "{{ alertmanager_receivers[receiver.name].auth_username }}"
+        auth_password: "{{ alertmanager_receivers[receiver.name].auth_password }}"
+  {% endfor %}
+{% endfor %}
