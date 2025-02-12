@@ -26,5 +26,8 @@ jobs:
       - name: Set ANSIBLE_HOME
         run: echo "ANSIBLE_HOME=/tmp/.ansible" >> $GITHUB_ENV
 
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install community.docker
+
       - name: Run ansible-lint
         run: ansible-lint
