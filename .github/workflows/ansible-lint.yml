@@ -1,6 +1,8 @@
-name: ansible-lint
+name: ansible-Lint
+
 on:
   pull_request:
+  push:
     branches:
       - main
 
@@ -10,14 +12,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install Ansible collections
-        run: ansible-galaxy collection install community.docker
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-      - name: Run ansible-lint
-        uses: ansible/ansible-lint@main
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          args: ""
-          setup_python: "true"
-          working_directory: ""
-          requirements_file: ""
+          python-version: '3.x'
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+
+      - name: Set ANSIBLE_HOME
+        run: echo "ANSIBLE_HOME=/tmp/.ansible" >> $GITHUB_ENV
+
+      - name: Run ansible-lint
+        run: ansible-lint
