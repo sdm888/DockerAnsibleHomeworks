@@ -1,0 +1,68 @@
+---
+- name: Проверка, что Docker Swarm инициализирован
+  community.docker.docker_swarm:
+    state: present
+
+- name: Установка меток ноды для Prometheus
+  community.docker.docker_node:
+    hostname: "{{ ansible_hostname }}"
+    labels:
+      prometheus: "true"
+    labels_state: replace
+
+- name: Создание файла настроек из шаблона
+  ansible.builtin.template:
+    src: templates/prometheus.yml.j2
+    dest: /tmp/prometheus.yml
+    mode: "644"
+
+- name: Создание конфига с настройками Prometheus
+  block:
+    - name: Чтение файла настроек Prometheus с удалённого хоста
+      ansible.builtin.slurp:
+        src: /tmp/prometheus.yml
+      register: prometheus_config_content
+
+    - name: Создание конфига Docker для Prometheus
+      community.docker.docker_config:
+        name: prometheus_config
+        data: "{{ prometheus_config_content['content'] | b64decode }}"
+        labels:
+          config: "{{ prometheus_config_content['content'] | hash('sha1') }}"
+        state: present
+
+    # - name: Удаление временного файла
+    #   ansible.builtin.file:
+    #     path: /tmp/prometheus.yml
+    #     state: absent
+
+- name: Создание тома (volume) для данных Prometheus
+  community.docker.docker_volume:
+    name: prometheus_data
+
+- name: Запуск Prometheus
+  community.docker.docker_swarm_service:
+    name: prometheus
+    image: prom/prometheus
+    state: present
+    force_update: true
+    replicas: 1
+    networks:
+      - name: "{{ network_name }}"
+    publish:
+      - mode: ingress
+        protocol: tcp
+        published_port: "{{ prometheus.port }}"
+        target_port: 9090
+    labels:
+      prometheus: "true"
+    configs:
+      - config_name: prometheus_config
+        filename: /etc/prometheus/prometheus.yml
+        mode: "444"
+    mounts:
+      - type: volume
+        source: prometheus_data
+        target: /prometheus
+    args:
+      - "--config.file=/etc/prometheus/prometheus.yml"

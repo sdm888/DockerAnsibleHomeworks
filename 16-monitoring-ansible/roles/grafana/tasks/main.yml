@@ -1,0 +1,45 @@
+---
+- name: Проверка, что Docker Swarm инициализирован
+  community.docker.docker_swarm:
+    state: present
+
+- name: Создание конфига с настройками Grafana
+  vars:
+    config_file: "{{ lookup('template', 'templates/grafana_config.j2') }}"
+  community.docker.docker_config:
+    name: grafana_config
+    data: "{{ config_file | b64encode }}"
+    labels:
+      config: "{{ config_file | hash('sha1') }}"
+    data_is_b64: true
+    state: present
+
+- name: Создание томов (volume) для данных Grafana
+  community.docker.docker_volume:
+    name: "{{ item.name }}"
+  loop: "{{ grafana_volume_list }}"
+
+- name: Запуск Grafana
+  community.docker.docker_swarm_service:
+    name: grafana
+    image: grafana/grafana
+    state: present
+    force_update: true
+    replicas: 1
+    networks:
+      - name: "{{ network_name }}"
+    publish:
+      - mode: ingress
+        protocol: tcp
+        published_port: "{{ grafana.port }}"
+        target_port: 3000
+    configs:
+      - config_name: grafana_config
+        filename: /etc/grafana/grafana.ini
+        mode: "444"
+    mounts:
+      - type: volume
+        source: "{{ item.name }}"
+        target: "{{ item.target }}"
+        readonly: false
+  loop: "{{ grafana_volume_list }}"

@@ -1,0 +1,11 @@
+---
+- name: Подключение к Swarm в качестве "{{ type }}"
+  community.docker.docker_swarm:
+    state: join
+    remote_addrs: "{{ swarm_advertise_addr }}"
+    join_token: >
+      {{
+        hostvars['deploy1']['ansible_facts']['token_worker']
+        if swarm_join_type == 'worker' else
+        hostvars['deploy1']['ansible_facts']['token_manager']
+      }}

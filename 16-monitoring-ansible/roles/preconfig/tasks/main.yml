@@ -1,0 +1,51 @@
+---
+- name: Установка Docker
+  block:
+    - name: Добавляем universe
+      ansible.builtin.apt_repository:
+        repo: "deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
+        state: present
+
+    - name: Установка дополнительных пакетов
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - git
+          - python3-pip
+        update_cache: true
+        cache_valid_time: 86400
+
+    # - name: Установка модуля requests для Python
+    #   ansible.builtin.pip:
+    #     name: requests
+
+    - name: Добавление ключа Docker
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Установка стабильного репозитория
+      ansible.builtin.apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu focal stable"
+        state: present
+        update_cache: true
+        filename: docker
+
+    - name: Установка Docker CE
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+        update_cache: true
+
+    - name: Установка pip пакетов
+      ansible.builtin.pip:
+        name: docker
+
+    - name: Проверка, что Docker установлен и перезагружен
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+        enabled: true

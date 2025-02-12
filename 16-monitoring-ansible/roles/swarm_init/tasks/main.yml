@@ -1,0 +1,17 @@
+---
+- name: Инициализация Swarm
+  community.docker.docker_swarm:
+    state: present
+    advertise_addr: "{{ swarm_advertise_addr }}"
+  register: token
+
+- name: Сохранение токенов Swarm
+  ansible.builtin.set_fact:
+    token_manager: "{{ token.swarm_facts.JoinTokens.Manager }}"
+    token_worker: "{{ token.swarm_facts.JoinTokens.Worker }}"
+    cacheable: true
+
+- name: Создание сети
+  community.docker.docker_network:
+    name: "{{ network_name }}"
+    driver: overlay
